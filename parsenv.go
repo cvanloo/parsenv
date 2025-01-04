@@ -6,19 +6,21 @@ import (
 	"reflect"
 	"strings"
 	"unicode"
+	"unsafe"
+	"errors"
 )
 
 // @todo: support ints and floats aside from strings
 // @todo: infer name, camel case to SCREAMING_SNAKE_CASE
-// @todo: required property
-// @todo: ignore (-) property
 
 type TagData struct {
 	Name string
 	Default string
+	Required bool
+	Ignored bool
 }
 
-func Load(cfg any) error {
+func Load(cfg any) (err error) {
 	cfgRefl := reflect.ValueOf(cfg)
 	cfgType := cfgRefl.Type()
 	if cfgType.Kind() != reflect.Pointer {
@@ -32,10 +34,14 @@ func Load(cfg any) error {
 				optionName = td.Name
 			}
 			if val := cfgRefl.Elem().Field(field.Index[0]); val.IsValid() {
-				if strVal := os.Getenv(optionName); strVal != "" {
-					val.Set(reflect.ValueOf(strVal))
+				if td.Ignored {
+					// ignore
+				} else if strVal := os.Getenv(optionName); strVal != "" {
+					setUnexportedField(val, strVal)
 				} else if td.Default != "" {
-					val.Set(reflect.ValueOf(td.Default))
+					setUnexportedField(val, td.Default)
+				} else if td.Required {
+					err = errors.Join(err, fmt.Errorf("missing env value for required field: %s", field.Name))
 				}
 			}
 		}
@@ -50,18 +56,28 @@ func parseTag(rawTag string) (td TagData) {
 	rawParts := strings.Split(rawTag, ";")
 	for _, rawProperty := range rawParts {
 		propertyParts := strings.Split(rawProperty, "=")
-		if len(propertyParts) != 2 {
-			panic(fmt.Sprintf("invalid format for property in cfg tag: %s", rawProperty)) // @todo: better error message (location?)
-		}
-		key := propertyParts[0]
-		val := propertyParts[1]
-		switch key {
+		switch len(propertyParts) {
 		default:
-			panic(fmt.Sprintf("unknown property in cfg tag: %s", key))
-		case "name":
-			td.Name = val
-		case "default":
-			td.Default = val
+			panic(fmt.Sprintf("invalid format for property in cfg tag: %s", rawProperty)) // @todo: better error message (location?)
+		case 1:
+			switch propertyParts[0] {
+			default:
+			case "-":
+				td.Ignored = true
+			case "required":
+				td.Required = true
+			}
+		case 2:
+			key := propertyParts[0]
+			val := propertyParts[1]
+			switch key {
+			default:
+				panic(fmt.Sprintf("unknown property in cfg tag: %s", key))
+			case "name":
+				td.Name = val
+			case "default":
+				td.Default = val
+			}
 		}
 	}
 	return td
@@ -88,4 +104,8 @@ func changeNameCase(name string) string {
 		screamingSnakeCase.WriteRune(unicode.ToUpper(r))
 	}
 	return screamingSnakeCase.String()
+}
+
+func setUnexportedField(field reflect.Value, value any) {
+	reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).Elem().Set(reflect.ValueOf(value))
 }
