@@ -1,3 +1,20 @@
+// The parsenv package exposes a Load function that populates the fields of a
+// struct with data from environment variables.
+//
+//   var myConfig struct {
+//   	foo string  `cfg:"required"`
+//   	bar int     `cfg:"default=15"`
+//   	baz float64 `cfg:"name=bAz;default=6.97"`
+//   }
+//   
+//   if err := parsenv.Load(&myConfig); err != nil {
+//   	log.Fatal(err)
+//   }
+//
+// Per default, field names are converted from PascalCase or camelCase to
+// SCREAMING_SNAKE_CASE.
+//
+// For parsing options refer to the documentation of parsenv.TagData.
 package parsenv
 
 import (
@@ -11,13 +28,28 @@ import (
 	"unsafe"
 )
 
+// The behavior of how the environment is read into a struct can be influenced
+// with the `cfg` struct tag.
+//
+//   var myConfig struct{
+//   	foo int     `cfg:"-"`                    // this field is ignored
+//   	bar float64 `cfg:"required"`             // return an error if BAR is not found in the environment
+//   	baz string  `cfg:"name=baz"`             // specify a custom name for the env var (per default the field name is converted to SCREAMING_SNAKE_CASE)
+//   	zap string  `cfg:"default=hello world"`  // specify a default value
+//   	puf int     `cfg:"name=PUFF;default=19"` // use ; to specify multiple properties
+//   }
 type TagData struct {
-	Name string
-	Default string
-	Required bool
-	Ignored bool
+	Name     string // name=<name>
+	Default  string // default=<value>
+	Required bool   // required
+	Ignored  bool   // -
 }
 
+// Load reads environment variables into a struct.
+// If the cfg variable passed is not a pointer to a struct, Load will panic.
+// If any of the fields contain invalid `cfg` struct tags, Load will panic also.
+// If one or more fields marked as 'required' don't have a corresponding
+// environment variable, Load will return an error.
 func Load(cfg any) (err error) {
 	cfgRefl := reflect.ValueOf(cfg)
 	cfgType := cfgRefl.Type()

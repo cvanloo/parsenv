@@ -1,9 +1,31 @@
 package parsenv
 
 import (
-	"testing"
+	"fmt"
+	"log"
+	"os"
 	"reflect"
+	"testing"
 )
+
+func ExampleLoad() {
+	os.Setenv("FOO", "こんにちは、世界！")
+	os.Setenv("BAZ", "13.37")
+
+	var myConfig struct {
+		foo string  `cfg:"required"`
+		bar int     `cfg:"default=15"`
+		baz float64 `cfg:"name=bAz;default=6.97"`
+	}
+
+	if err := Load(&myConfig); err != nil {
+		log.Fatal(err)
+	}
+
+	// because BAZ does not match the custom name bAz, the default value is applied.
+	fmt.Println(myConfig.foo, myConfig.bar, myConfig.baz)
+	// Output: こんにちは、世界！ 15 6.97
+}
 
 type testConfig struct {
 	foo string `cfg:"-"`
