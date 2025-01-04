@@ -1,17 +1,15 @@
 package parsenv
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 	"unicode"
 	"unsafe"
-	"errors"
 )
-
-// @todo: support ints and floats aside from strings
-// @todo: infer name, camel case to SCREAMING_SNAKE_CASE
 
 type TagData struct {
 	Name string
@@ -27,26 +25,28 @@ func Load(cfg any) (err error) {
 		panic("parsenv.Load: must pass a pointer")
 	}
 	for _, field := range reflect.VisibleFields(cfgType.Elem()) {
-		if field.Type.Kind() == reflect.String {
-			optionName := changeNameCase(field.Name)
-			td := parseTag(field.Tag.Get("cfg"))
-			if td.Name != "" {
-				optionName = td.Name
-			}
-			if val := cfgRefl.Elem().Field(field.Index[0]); val.IsValid() {
-				if td.Ignored {
-					// ignore
-				} else if strVal := os.Getenv(optionName); strVal != "" {
-					setUnexportedField(val, strVal)
-				} else if td.Default != "" {
-					setUnexportedField(val, td.Default)
-				} else if td.Required {
-					err = errors.Join(err, fmt.Errorf("missing env value for required field: %s", field.Name))
-				}
+		optionName := changeNameCase(field.Name)
+		td := parseTag(field.Tag.Get("cfg"))
+		if td.Name != "" {
+			optionName = td.Name
+		}
+		if val := cfgRefl.Elem().Field(field.Index[0]); val.IsValid() {
+			if td.Ignored {
+				// ignore
+			} else if strVal := os.Getenv(optionName); strVal != "" {
+				optVal, perr := parseValue(field.Type.Kind(), strVal)
+				err = errors.Join(err, perr)
+				setUnexportedField(val, optVal)
+			} else if td.Default != "" {
+				optVal, perr := parseValue(field.Type.Kind(), td.Default)
+				err = errors.Join(err, perr)
+				setUnexportedField(val, optVal)
+			} else if td.Required {
+				err = errors.Join(err, fmt.Errorf("missing env value for required field: %s", field.Name))
 			}
 		}
 	}
-	return nil
+	return err
 }
 
 func parseTag(rawTag string) (td TagData) {
@@ -104,6 +104,19 @@ func changeNameCase(name string) string {
 		screamingSnakeCase.WriteRune(unicode.ToUpper(r))
 	}
 	return screamingSnakeCase.String()
+}
+
+func parseValue(kind reflect.Kind, val string) (any, error) {
+	switch kind {
+	default:
+		panic("only the types string, int, and float64 are supported")
+	case reflect.String:
+		return val, nil
+	case reflect.Int:
+		return strconv.Atoi(val)
+	case reflect.Float64:
+		return strconv.ParseFloat(val, 64)
+	}
 }
 
 func setUnexportedField(field reflect.Value, value any) {

@@ -62,16 +62,17 @@ func TestParsenvMissingRequired(t *testing.T) {
 		eew: 0.0,
 	}
 	err := Load(&myConfig)
-	if err != nil {
+	if err == nil {
 		t.Error("expected non-nil error, got nil")
 	}
 	werr, ok := err.(interface{ Unwrap() []error })
 	if !ok {
 		t.Error("expected error to implement Unwrap() []error, but it does not")
-	}
-	errs := werr.Unwrap()
-	if len(errs) != 2 {
-		t.Errorf("expected to get 2 errors, but got: %d", len(errs))
+	} else {
+		errs := werr.Unwrap()
+		if len(errs) != 2 {
+			t.Errorf("expected to get 2 errors, but got: %d", len(errs))
+		}
 	}
 	if !reflect.DeepEqual(myConfig, expectedConfig) {
 		t.Errorf("expected %#v, got: %#v", expectedConfig, myConfig)
