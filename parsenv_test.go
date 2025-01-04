@@ -39,7 +39,7 @@ type testConfig struct {
 	eew float64
 }
 
-func TestParsenv(t *testing.T) {
+func TestLoad(t *testing.T) {
 	var myConfig testConfig
 	expectedConfig := testConfig{
 		foo: "",
@@ -70,7 +70,7 @@ func TestParsenv(t *testing.T) {
 	}
 }
 
-func TestParsenvMissingRequired(t *testing.T) {
+func TestLoadMissingRequired(t *testing.T) {
 	var myConfig testConfig
 	expectedConfig := testConfig{
 		foo: "",
@@ -99,6 +99,28 @@ func TestParsenvMissingRequired(t *testing.T) {
 	if !reflect.DeepEqual(myConfig, expectedConfig) {
 		t.Errorf("expected %#v, got: %#v", expectedConfig, myConfig)
 	}
+}
+
+func TestLoadNotAPointer(t *testing.T) {
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Error("expected a panic, got nothing")
+		}
+	}()
+	var myConfig struct{}
+	Load(myConfig)
+}
+
+func TestLoadNotAStruct(t *testing.T) {
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Error("expected a panic, got nothing")
+		}
+	}()
+	var myConfig int
+	Load(&myConfig)
 }
 
 func TestCaseChange(t *testing.T) {

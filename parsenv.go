@@ -54,7 +54,10 @@ func Load(cfg any) (err error) {
 	cfgRefl := reflect.ValueOf(cfg)
 	cfgType := cfgRefl.Type()
 	if cfgType.Kind() != reflect.Pointer {
-		panic("parsenv.Load: must pass a pointer")
+		panic("parsenv.Load: must pass a pointer to a structure")
+	}
+	if cfgRefl.Elem().Type().Kind() != reflect.Struct {
+		panic("parsenv.Load: must pass a pointer to a structure")
 	}
 	for _, field := range reflect.VisibleFields(cfgType.Elem()) {
 		optionName := changeNameCase(field.Name)
