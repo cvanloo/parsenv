@@ -1,10 +1,8 @@
-package parsenv_test
+package parsenv
 
 import (
 	"testing"
 	"reflect"
-
-	"github.com/cvanloo/parsenv"
 )
 
 type testConfig struct {
@@ -42,7 +40,7 @@ func TestParsenv(t *testing.T) {
 	t.Setenv("EEW", "6.7")
 
 	// should not panic
-	if err := parsenv.Load(&myConfig); err != nil {
+	if err := Load(&myConfig); err != nil {
 		t.Error(err)
 	}
 	if !reflect.DeepEqual(myConfig, expectedConfig) {
@@ -63,7 +61,7 @@ func TestParsenvMissingRequired(t *testing.T) {
 		wou: 0,
 		eew: 0.0,
 	}
-	err := parsenv.Load(&myConfig)
+	err := Load(&myConfig)
 	if err != nil {
 		t.Error("expected non-nil error, got nil")
 	}
@@ -77,5 +75,20 @@ func TestParsenvMissingRequired(t *testing.T) {
 	}
 	if !reflect.DeepEqual(myConfig, expectedConfig) {
 		t.Errorf("expected %#v, got: %#v", expectedConfig, myConfig)
+	}
+}
+
+func TestCaseChange(t *testing.T) {
+	c1 := changeNameCase("helloGoodWorld")
+	if c1 != "HELLO_GOOD_WORLD" {
+		t.Errorf("expected HELLO_GOOD_WORLD, got: %s", c1)
+	}
+	c2 := changeNameCase("HelloGentleMoon")
+	if c2 != "HELLO_GENTLE_MOON" {
+		t.Errorf("expected HELLO_GENTLE_MOON, got: %s", c2)
+	}
+	c3 := changeNameCase("someoneReallyLikesACRONYMS")
+	if c3 != "SOMEONE_REALLY_LIKES_ACRONYMS" {
+		t.Errorf("expected SOMEONE_REALLY_LIKES_ACRONYMS, got: %s", c3)
 	}
 }

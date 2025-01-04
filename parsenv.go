@@ -5,6 +5,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"unicode"
 )
 
 // @todo: support ints and floats aside from strings
@@ -25,7 +26,7 @@ func Load(cfg any) error {
 	}
 	for _, field := range reflect.VisibleFields(cfgType.Elem()) {
 		if field.Type.Kind() == reflect.String {
-			optionName := field.Name
+			optionName := changeNameCase(field.Name)
 			td := parseTag(field.Tag.Get("cfg"))
 			if td.Name != "" {
 				optionName = td.Name
@@ -64,4 +65,27 @@ func parseTag(rawTag string) (td TagData) {
 		}
 	}
 	return td
+}
+
+func changeNameCase(name string) string {
+	runes := []rune(name)
+	caseChangeIdxs := []int{0}
+	for i := range runes[1:] {
+		if unicode.IsLower(runes[i]) && unicode.IsUpper(runes[i+1]) {
+			caseChangeIdxs = append(caseChangeIdxs, i+1)
+		}
+	}
+	var screamingSnakeCase strings.Builder
+	for i := range caseChangeIdxs[1:] {
+		s := caseChangeIdxs[i]
+		e := caseChangeIdxs[i+1]
+		for _, r := range runes[s:e] {
+			screamingSnakeCase.WriteRune(unicode.ToUpper(r))
+		}
+		screamingSnakeCase.WriteRune('_')
+	}
+	for _, r := range runes[caseChangeIdxs[len(caseChangeIdxs)-1]:] {
+		screamingSnakeCase.WriteRune(unicode.ToUpper(r))
+	}
+	return screamingSnakeCase.String()
 }
