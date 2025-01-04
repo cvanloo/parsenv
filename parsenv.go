@@ -5,6 +5,7 @@
 //		foo string  `cfg:"required"`
 //		bar int     `cfg:"default=15"`
 //		baz float64 `cfg:"name=bAz;default=6.97"`
+//		qux bool    `cfg:"-"`
 //	}
 //
 //	if err := parsenv.Load(&myConfig); err != nil {
@@ -34,7 +35,7 @@ import (
 //	var myConfig struct{
 //		foo int     `cfg:"-"`                    // this field is ignored
 //		bar float64 `cfg:"required"`             // return an error if BAR is not found in the environment
-//		baz string  `cfg:"name=baz"`             // specify a custom name for the env var (per default the field name is converted to SCREAMING_SNAKE_CASE)
+//		baz bool    `cfg:"name=baz"`             // specify a custom name for the env var (per default the field name is converted to SCREAMING_SNAKE_CASE)
 //		zap string  `cfg:"default=hello world"`  // specify a default value
 //		puf int     `cfg:"name=PUFF;default=19"` // use ; to specify multiple properties
 //	}
@@ -144,13 +145,26 @@ func changeNameCase(name string) string {
 func parseValue(kind reflect.Kind, val string) (any, error) {
 	switch kind {
 	default:
-		panic("only the types string, int, and float64 are supported")
+		panic("only the types string, int, bool, and float64 are supported")
 	case reflect.String:
 		return val, nil
 	case reflect.Int:
 		return strconv.Atoi(val)
 	case reflect.Float64:
 		return strconv.ParseFloat(val, 64)
+	case reflect.Bool:
+		return wordToBool(val)
+	}
+}
+
+func wordToBool(word string) (bool, error) {
+	switch strings.ToLower(word) {
+	case "y", "yes", "t", "true", "1":
+		return true, nil
+	case "n", "no", "f", "false", "0":
+		return false, nil
+	default:
+		return false, fmt.Errorf("not a boolean value: %s", word)
 	}
 }
 

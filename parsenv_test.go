@@ -11,11 +11,13 @@ import (
 func ExampleLoad() {
 	os.Setenv("FOO", "こんにちは、世界！")
 	os.Setenv("BAZ", "13.37")
+	os.Setenv("QUX", "yes")
 
 	var myConfig struct {
 		foo string  `cfg:"required"`
 		bar int     `cfg:"default=15"`
 		baz float64 `cfg:"name=bAz;default=6.97"`
+		qux bool
 	}
 
 	if err := Load(&myConfig); err != nil {
@@ -23,15 +25,15 @@ func ExampleLoad() {
 	}
 
 	// because BAZ does not match the custom name bAz, the default value is applied.
-	fmt.Println(myConfig.foo, myConfig.bar, myConfig.baz)
-	// Output: こんにちは、世界！ 15 6.97
+	fmt.Println(myConfig.foo, myConfig.bar, myConfig.baz, myConfig.qux)
+	// Output: こんにちは、世界！ 15 6.97 true
 }
 
 type testConfig struct {
 	foo string `cfg:"-"`
 	bar string `cfg:"required"`
 	baz string `cfg:"default=hello world"`
-	zab string `cfg:"name=ZaB"`
+	zab bool   `cfg:"name=ZaB"`
 	rab string `cfg:"name=RaB;default=goodnight moon"`
 	oof string `cfg:"name=oOF;required"`
 	uwa int
@@ -45,7 +47,7 @@ func TestLoad(t *testing.T) {
 		foo: "",
 		bar: "bar value",
 		baz: "baz value",
-		zab: "zab value",
+		zab: true,
 		rab: "goodnight moon",
 		oof: "oof value",
 		uwa: 0,
@@ -56,7 +58,7 @@ func TestLoad(t *testing.T) {
 	t.Setenv("FOO", "foo value") // must be ignored
 	t.Setenv("BAR", "bar value")
 	t.Setenv("BAZ", "baz value")
-	t.Setenv("ZaB", "zab value")
+	t.Setenv("ZaB", "YES")
 	t.Setenv("oOF", "oof value")
 	t.Setenv("wou", "5")
 	t.Setenv("EEW", "6.7")
@@ -76,7 +78,7 @@ func TestLoadMissingRequired(t *testing.T) {
 		foo: "",
 		bar: "",
 		baz: "hello world",
-		zab: "",
+		zab: false,
 		rab: "goodnight moon",
 		oof: "",
 		uwa: 0,
