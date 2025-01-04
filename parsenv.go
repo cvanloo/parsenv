@@ -1,15 +1,15 @@
 // The parsenv package exposes a Load function that populates the fields of a
 // struct with data from environment variables.
 //
-//   var myConfig struct {
-//   	foo string  `cfg:"required"`
-//   	bar int     `cfg:"default=15"`
-//   	baz float64 `cfg:"name=bAz;default=6.97"`
-//   }
-//   
-//   if err := parsenv.Load(&myConfig); err != nil {
-//   	log.Fatal(err)
-//   }
+//	var myConfig struct {
+//		foo string  `cfg:"required"`
+//		bar int     `cfg:"default=15"`
+//		baz float64 `cfg:"name=bAz;default=6.97"`
+//	}
+//
+//	if err := parsenv.Load(&myConfig); err != nil {
+//		log.Fatal(err)
+//	}
 //
 // Per default, field names are converted from PascalCase or camelCase to
 // SCREAMING_SNAKE_CASE.
@@ -31,13 +31,13 @@ import (
 // The behavior of how the environment is read into a struct can be influenced
 // with the `cfg` struct tag.
 //
-//   var myConfig struct{
-//   	foo int     `cfg:"-"`                    // this field is ignored
-//   	bar float64 `cfg:"required"`             // return an error if BAR is not found in the environment
-//   	baz string  `cfg:"name=baz"`             // specify a custom name for the env var (per default the field name is converted to SCREAMING_SNAKE_CASE)
-//   	zap string  `cfg:"default=hello world"`  // specify a default value
-//   	puf int     `cfg:"name=PUFF;default=19"` // use ; to specify multiple properties
-//   }
+//	var myConfig struct{
+//		foo int     `cfg:"-"`                    // this field is ignored
+//		bar float64 `cfg:"required"`             // return an error if BAR is not found in the environment
+//		baz string  `cfg:"name=baz"`             // specify a custom name for the env var (per default the field name is converted to SCREAMING_SNAKE_CASE)
+//		zap string  `cfg:"default=hello world"`  // specify a default value
+//		puf int     `cfg:"name=PUFF;default=19"` // use ; to specify multiple properties
+//	}
 type TagData struct {
 	Name     string // name=<name>
 	Default  string // default=<value>

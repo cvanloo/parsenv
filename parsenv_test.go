@@ -35,7 +35,7 @@ type testConfig struct {
 	rab string `cfg:"name=RaB;default=goodnight moon"`
 	oof string `cfg:"name=oOF;required"`
 	uwa int
-	wou int    `cfg:"name=wou"`
+	wou int `cfg:"name=wou"`
 	eew float64
 }
 
